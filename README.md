@@ -1,25 +1,21 @@
-# Python Web Scraping Application
+# Scrape & Analyze: Python Web Scraping for Activewear Insights
 
 ## Project Highlights  
   
-Have you ever wondered how developers and businesses alike automatically scrape data from the web? Dive into the world of web scraping with this ready-to-deploy web scraping toolkit, where we use one of the most common Python libraries for web-scraping - Selenium. This project provides a comprehensive implementation of this library to estimate consumer sentiment trends in the sports apparal using Python.
+Discover consumer sentiment trends with Python Web Scraping: Ever wondered how to glean insights from the web automatically? Leverage the power of web scraping with this Python toolkit and dive into real-time consumer sentiment analysis, in the activewear industry. This project provides a comprehensive implementation of the Selenium library to collect data from the web and later estimate consumer sentiment trends.
 
 <br>
-
-...
-
 <br>
 
 In this Python project, you will explore the following key areas:  
-  
-1. **Understanding x**: y.  
-2. **Data Retrieval**: y.  
-3. **Model Implementation**: y.  
-4. **Visualization**: y.  
-5. **Sensitivity Analysis**: y. 
+
+1. **Real-world application:** Analyze consumer feedback from top activewear brands.  
+2. **Comprehensive toolkit:** Leverage Selenium to efficiently scrape reviews and ratings.
+3. **Sentiment Analysis:** Apply natural language processing to understand trends. 
+4. **Data visualization:** Visualize and interpret consumer sentiments. 
 
 <br>
-<br>
+
 ### Getting Started  
   
 Ensure you have Python installed on your machine. You will also need to install the following libraries:  
@@ -73,16 +69,16 @@ browser.get('https://www.trustpilot.com/review/www.adidas.com')
 ```
 
 Potential targets for analysis
-```bash
-# Established activewear companies
-  # https://www.trustpilot.com/review/www.adidas.com
-  # https://www.trustpilot.com/review/puma.com
-  # https://www.trustpilot.com/review/www.nike.com
+<br>
+Established activewear companies
+1. https://www.trustpilot.com/review/www.adidas.com
+2. https://www.trustpilot.com/review/puma.com
+3. https://www.trustpilot.com/review/www.nike.com
 
-# New comers: 
-  # https://www.trustpilot.com/review/arcteryx.com
-  # https://www.trustpilot.com/review/www.salomon.com
-```
+New comers: 
+1. https://www.trustpilot.com/review/arcteryx.com
+2. https://www.trustpilot.com/review/www.salomon.com
+
 
 Subset reviews
 ```bash
@@ -138,4 +134,62 @@ for i in tqdm(range(1, 50)):
         print(f"Error on page {i}\n{e}")
 ```
 
-...
+Set-up final dataframe
+```bash
+merge = pd.concat([results, results2], axis=0, ignore_index=True)
+
+# Decode each entry to ensure consistent encoding, when writing to .xlsx
+merge['backup'] = merge['backup'].apply(lambda x: x.encode('utf-8').decode('unicode_escape') if isinstance(x, str) else x)
+```
+
+Use translator
+```bash
+translator = GoogleTranslator(source="auto", target="en")
+
+# Define a function to translate text with checks for nan and length
+def safe_translate(text):
+    if isinstance(text, str) and len(text) <= 5000:
+        return translator.translate(text)
+    elif isinstance(text, float) and np.isnan(text):
+        return text
+    return text
+
+
+# Translate columns
+merge["body_DE"] = merge["backup"].apply(safe_translate)
+```
+
+Parsing and cleaning data
+```bash
+# Function to split the text
+def split_text(text):
+    if 'ago' in text:
+        return text.split('ago', 1)  # Split at the first occurrence of 'ago'
+    elif ', 202' in text:
+        return text.split(', 202', 1)  # Split at the first occurrence of ',202'
+    elif ', 201' in text:
+        return text.split(', 201', 1)  # Split at the first occurrence of ',201'
+    return [text, '']  # Return original text and empty string if neither is found
+
+# Apply the function to split the text_column
+merge[['part1', 'part2']] = merge['backup'].apply(split_text).apply(pd.Series)
+
+# Split the 'backup' column after "Date of experience"
+third_part = merge['part2'].str.split('Date of experience', n=1, expand=True)
+
+# Assign column names to the resulting DataFrame  
+third_part.columns = ['body', 'tail']  
+
+# Combine with original DataFrame if needed
+merge = pd.concat([merge, third_part['body']], axis=1)
+
+# Parse rating column
+merge['rating'] = merge['rating'].apply(lambda x: int(re.search(r'Rated (\d+)', x).group(1)))
+
+# Parse date column
+# Use str.extract with a regex pattern to extract the date  
+merge['experience_date_parsed'] = merge['experience_date'].str.extract(r'Date of experience: (.+)')  
+
+#Drop columns
+merge = merge.drop(columns=["part1", "part2", "experience_date"])
+```
