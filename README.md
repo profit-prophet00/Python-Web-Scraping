@@ -173,7 +173,6 @@ def safe_translate(text):
         return text
     return text
 
-
 # Translate columns
 merge["body_v2"] = merge["body"].apply(safe_translate)
 ```
