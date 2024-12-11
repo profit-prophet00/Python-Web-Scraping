@@ -19,7 +19,7 @@ In this Python project, you will explore the following key areas:
   
 Ensure you have Python installed on your machine. You will also need to install the following libraries:  
 ```bash
-pip install pandas numpy nltk re tqdm time selenium   
+pip install pandas numpy nltk re tqdm time matplotlib selenium   
 ```
 
 Library imports
@@ -30,6 +30,7 @@ import nltk
 import re
 from tqdm import tqdm
 import time
+import matplotlib.pyplot as plt
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
@@ -51,7 +52,7 @@ from deep_translator import GoogleTranslator
 
 Initialize Chrome WebDriver
 <br>
-Consult the following website for recent documentation on chromedriver versions: https://developer.chrome.com/docs/chromedriver/downloads
+Consult the following page for chromedriver versions: https://developer.chrome.com/docs/chromedriver/downloads
 ```bash
 # Specify the path to your Chrome driver
 driver_path = r"..\chromedriver.exe"
@@ -126,23 +127,6 @@ Set-up final dataframe
 merge = pd.concat([results, results2], axis=0, ignore_index=True)
 ```
 
-Use translator
-```bash
-translator = GoogleTranslator(source="auto", target="en")
-
-# Define a function to translate text with checks for nan and length
-def safe_translate(text):
-    if isinstance(text, str) and len(text) <= 5000:
-        return translator.translate(text)
-    elif isinstance(text, float) and np.isnan(text):
-        return text
-    return text
-
-
-# Translate columns
-merge["body_DE"] = merge["backup"].apply(safe_translate)
-```
-
 Parsing and cleaning data
 ```bash
 # Function to split the text
@@ -170,19 +154,108 @@ merge = pd.concat([merge, third_part['body']], axis=1)
 # Parse rating column
 merge['rating'] = merge['rating'].apply(lambda x: int(re.search(r'Rated (\d+)', x).group(1)))
 
-# Parse date column
-# Use str.extract with a regex pattern to extract the date  
+# Parse date column: Use str.extract with a regex pattern to extract the date  
 merge['experience_date_parsed'] = merge['experience_date'].str.extract(r'Date of experience: (.+)')  
 
 #Drop columns
 merge = merge.drop(columns=["part1", "part2", "experience_date"])
 ```
 
-Optional step
+Use translator
 ```bash
-# Decode each entry to ensure consistent encoding, when writing to .xlsx
-merge['backup'] = merge['backup'].apply(lambda x: x.encode('utf-8').decode('unicode_escape') if isinstance(x, str) else x)
+translator = GoogleTranslator(source="auto", target="en")
 
-# Write to .xlsx
-merge.to_excel(r"C:\...\reviews.xlsx", index=False, engine="xlsxwriter")
+# Define a function to translate text with checks for nan and length
+def safe_translate(text):
+    if isinstance(text, str) and len(text) <= 5000:
+        return translator.translate(text)
+    elif isinstance(text, float) and np.isnan(text):
+        return text
+    return text
+
+
+# Translate columns
+merge["body_v2"] = merge["body"].apply(safe_translate)
+```
+
+Sentiment analysis (HuggingFace Repo)
+```bash
+from transformers import pipeline
+
+# Start by creating an instance of pipeline() specifying a task you want to use it for
+# The pipeline() downloads and caches a default pretrained model and tokenizer for sentiment analysis
+classifier = pipeline(task="sentiment-analysis", model="cardiffnlp/twitter-roberta-base-sentiment-latest", tokenizer="cardiffnlp/twitter-roberta-base-sentiment-latest")
+
+# A short note on tokenization, stop-words, and any sort of pre-processing steps for text mining applications:
+# Most pretrained models (like BERT, DistilBERT, and RoBERTa) are designed to handle special characters and punctuation effectively, so there is typically no need to remove special characters or stopwords, unless they interfere with the task (e.g., unnecessary noise).
+# Stopwords (e.g., "the", "is", "and") are generally left in the text when using modern pretrained models like BERT or RoBERTa because the models are trained on text that includes them. Removing stopwords may disrupt the context, which is important for models that leverage context in sentence embeddings.
+
+# For testing purposes create a subset (if required)
+# search = merge['body'].head(100)
+search = merge['body']
+
+articles = []
+
+for index in search.index:
+    try:
+        content = search.loc[index]
+        
+        if pd.isnull(content):
+            # If 'text' is NaN, set the sentiment score as blank
+            sentiment_label = ''
+            sentiment_score = ''
+
+        else:         
+            sentiment = classifier(content)
+            sentiment_label = sentiment[0]['label']
+            sentiment_score = sentiment[0]['score']
+        
+        # Keep additional columns from the original DataFrame
+        articles_info = {'body': content, 
+                        'sentiment': sentiment_label,
+                        'score': sentiment_score,
+                        
+                        'title': merge.loc[index, 'title'],
+                        'review': merge.loc[index, 'review'],
+                        'country': merge.loc[index, 'country'],
+                        'experience_date_parsed': merge.loc[index, 'experience_date_parsed'],
+                        
+                        'rating': merge.loc[index, 'rating'],
+                        'backup': merge.loc[index, 'backup'],
+                        'brand': merge.loc[index, 'brand']
+                        }
+            
+        articles.append(articles_info)
+
+    except:
+        pass
+
+df = pd.DataFrame(articles)
+```
+
+Normalize sentiment/polarity scores
+```bash
+# Function to normalize sentiment scores
+def normalize_sentiment(df):
+    label = df['sentiment']
+    score = df['score']
+    
+    if label == 'positive':
+        return score  # Positive is mapped to score (0 to 1)
+    elif label == 'negative':
+        return -score  # Negative is mapped to negative score (-1 to 0)
+    elif label == 'neutral':
+        return (score - 0.5) * 2  # Neutral is scaled between -0.5 to 0.5
+
+# Apply normalization function to each row
+df['normalized_score'] = df.apply(normalize_sentiment, axis=1)
+
+# Count the number of reviews by sentiment
+sentiment_counts = df.groupby(['sentiment']).size()
+print(sentiment_counts)
+
+# Visualize sentiment
+fig = plt.figure(figsize=(6,6), dpi=100)
+ax = plt.subplot(111)
+sentiment_counts.plot.pie(ax=ax, autopct='%1.1f%%', startangle=270, fontsize=12, label="")
 ```
