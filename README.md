@@ -124,9 +124,6 @@ for i in tqdm(range(1, 50)):
 Set-up final dataframe
 ```bash
 merge = pd.concat([results, results2], axis=0, ignore_index=True)
-
-# Decode each entry to ensure consistent encoding, when writing to .xlsx
-merge['backup'] = merge['backup'].apply(lambda x: x.encode('utf-8').decode('unicode_escape') if isinstance(x, str) else x)
 ```
 
 Use translator
@@ -179,4 +176,13 @@ merge['experience_date_parsed'] = merge['experience_date'].str.extract(r'Date of
 
 #Drop columns
 merge = merge.drop(columns=["part1", "part2", "experience_date"])
+```
+
+Optional step
+```bash
+# Decode each entry to ensure consistent encoding, when writing to .xlsx
+merge['backup'] = merge['backup'].apply(lambda x: x.encode('utf-8').decode('unicode_escape') if isinstance(x, str) else x)
+
+# Write to .xlsx
+merge.to_excel(r"C:\...\reviews.xlsx", index=False, engine="xlsxwriter")
 ```
