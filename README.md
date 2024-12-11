@@ -1,4 +1,4 @@
-# Scrape & Analyze: Python Web Scraping for Activewear Insights
+# Scrape & Analyze: Python Web Scraping for Consumer Industry Insights
 
 ## Project Highlights  
   
