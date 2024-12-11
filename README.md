@@ -2,7 +2,7 @@
 
 ## Project Highlights  
   
-Discover consumer sentiment trends with Python Web Scraping: Ever wondered how to glean insights from the web automatically? Leverage the power of web scraping with this Python toolkit and dive into real-time consumer sentiment analysis, in the activewear industry. This project provides a comprehensive implementation of the Selenium library to collect data from the web and later estimate consumer sentiment trends.
+Discover consumer sentiment trends with Python Web Scraping: Curious about how to track what people are saying online? Then check out this Python web scraping toolkit. This project provides a comprehensive implementation of the Selenium library to automatically gather data from the web and monitor consumer sentiment trends in the activewear industry.
 
 <br>
 <br>
