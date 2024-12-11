@@ -67,18 +67,6 @@ browser = webdriver.Chrome(service=service, options=chrome_options)
 browser.get('https://www.trustpilot.com/review/www.adidas.com')
 ```
 
-Potential targets for analysis
-<br>
-Established activewear companies
-1. https://www.trustpilot.com/review/www.adidas.com
-2. https://www.trustpilot.com/review/puma.com
-3. https://www.trustpilot.com/review/www.nike.com
-
-New comers: 
-1. https://www.trustpilot.com/review/arcteryx.com
-2. https://www.trustpilot.com/review/www.salomon.com
-
-
 Subset reviews
 ```bash
 subset = browser.find_element(By.CLASS_NAME,value="styles_reviewsContainer__3_GQw")
