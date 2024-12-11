@@ -1,9 +1,8 @@
-# Python Web Scraping for Consumer Industry Insights
+# Python web scraping for consumer industry insights
 
 ## Project Highlights  
   
 Discover consumer sentiment trends with Python Web Scraping: Curious about how to track what people are saying online? Then check out this Python web scraping toolkit. This project provides a comprehensive implementation of the Selenium library to automatically gather data from the web and monitor consumer sentiment trends in the activewear industry.
-
 <br>
 <br>
 
