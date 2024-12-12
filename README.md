@@ -2,24 +2,25 @@
 
 ## Project Highlights  
   
-Curious about how to track what people are saying online? Then check out this Python web scraping toolkit. This project provides a comprehensive implementation of the Selenium library to automatically gather data from the web and monitor consumer sentiment trends in the activewear industry.
+Check out this Python web scraping toolkit to monitor consumer sentiment trends in the activewear industry! This project provides a comprehensive implementation of the Selenium library to automatically gather data from [trustpilot.com](https://www.trustpilot.com/), where you will explore the following key areas:  
 <br>
-<br>
-
-In this Python project, you will explore the following key areas:  
 
 1. **Real-world application:** Analyze consumer feedback from top activewear brands.  
-2. **Comprehensive toolkit:** Leverage Selenium to efficiently scrape reviews and ratings.
-3. **Sentiment Analysis:** Apply natural language processing to understand trends. 
+2. **Comprehensive toolkit:** Leverage ```Selenium``` to efficiently scrape reviews and ratings.
+3. **Sentiment Analysis:** Apply natural language processing to understand trends, based on pre-trained models from the [HuggingFace repo](https://huggingface.co/).
 4. **Data visualization:** Visualize and interpret consumer sentiments. 
 
+<br>
+<div align="center">  
+    <img src="https://github.com/user-attachments/assets/fe082e4a-4a82-4cb6-b04d-bd9e28af6de5" alt="sentiment_pie_chart" width="470"/>  
+</div>  
 <br>
 
 ### Getting Started  
   
 Ensure you have Python installed on your machine. You will also need to install the following libraries:  
 ```bash
-pip install pandas numpy nltk re tqdm time matplotlib selenium   
+pip install pandas numpy nltk re tqdm time matplotlib selenium deep_translator transformers
 ```
 
 Library imports
@@ -177,7 +178,7 @@ def safe_translate(text):
 merge["body_v2"] = merge["body"].apply(safe_translate)
 ```
 
-Sentiment analysis (HuggingFace Repo)
+Sentiment analysis (based on [HuggingFace repo](https://huggingface.co/))
 ```bash
 from transformers import pipeline
 
@@ -252,9 +253,38 @@ df['normalized_score'] = df.apply(normalize_sentiment, axis=1)
 # Count the number of reviews by sentiment
 sentiment_counts = df.groupby(['sentiment']).size()
 print(sentiment_counts)
+```
 
-# Visualize sentiment
-fig = plt.figure(figsize=(6,6), dpi=100)
-ax = plt.subplot(111)
-sentiment_counts.plot.pie(ax=ax, autopct='%1.1f%%', startangle=270, fontsize=12, label="")
+Line graph
+```bash
+# Convert and format each date in the series  
+df['year-month'] = df['experience_date_parsed'].apply(lambda x: pd.to_datetime(x).strftime("%y-%m"))  
+
+# Aggregate data by year-month
+df_aggr = df.groupby(['year-month', 'brand'])['normalized_score'].mean().reset_index()  
+
+# Ensure 'year-month' is in a comparable period format  
+df_aggr['year-month'] = pd.to_datetime(df_aggr['year-month'], format='%y-%m').dt.to_period('M')  
+  
+# Filter the DataFrame for 'year_month' >= '2021-12'  
+filtered_df = df_aggr[df_aggr['year-month'] >= pd.Period('2023-08', freq='M')]  
+
+# Plotting  
+plt.figure(figsize=(10, 6))  
+  
+# Iterate over each brand to plot its data  
+for brand in filtered_df['brand'].unique():  
+    brand_data = filtered_df[filtered_df['brand'] == brand]  
+    plt.plot(brand_data['year-month'].astype(str), brand_data['normalized_score'], marker='o', label=brand)  
+  
+# Add labels and title  
+plt.xlabel('Year-Month')  
+plt.ylabel('Average Polarity Score')  
+plt.title('Average polarity score by year-month for each brand')  
+plt.xticks(rotation=45)  
+plt.legend(title='Brand')  
+plt.tight_layout()  
+
+# Save the plot as a PNG file  
+plt.savefig('sentiment-timeline.png', format='png', bbox_inches='tight')
 ```
