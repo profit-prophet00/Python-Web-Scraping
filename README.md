@@ -1,4 +1,4 @@
-# Python web scraping for consumer industry insights
+# Python web scraping toolkit
 
 ## Project Highlights  
   
